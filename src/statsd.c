@@ -727,7 +727,7 @@ static int statsd_metric_clear_set_unsafe (statsd_metric_t *metric) /* {{{ */
 
 /* Must hold metrics_lock when calling this function. */
 static int statsd_metric_submit_unsafe (char const *name, /* {{{ */
-    statsd_metric_t const *metric)
+    statsd_metric_t *metric)
 {
   value_t values[1];
   value_list_t vl = VALUE_LIST_INIT;
@@ -744,7 +744,7 @@ static int statsd_metric_submit_unsafe (char const *name, /* {{{ */
   else if (metric->type == STATSD_SET)
     sstrncpy (vl.type, "objects", sizeof (vl.type));
   else /* if (metric->type == STATSD_COUNTER) */
-    sstrncpy (vl.type, "derive", sizeof (vl.type));
+    sstrncpy (vl.type, "gauge", sizeof (vl.type));
 
   sstrncpy (vl.type_instance, name, sizeof (vl.type_instance));
 
@@ -819,8 +819,10 @@ static int statsd_metric_submit_unsafe (char const *name, /* {{{ */
     else
       values[0].gauge = (gauge_t) c_avl_size (metric->set);
   }
-  else
-    values[0].derive = (derive_t) metric->value;
+  else {
+    values[0].gauge = (gauge_t) metric->value;
+    metric->value = 0.0;
+  }
 
   return (plugin_dispatch_values (&vl));
 } /* }}} int statsd_metric_submit_unsafe */
